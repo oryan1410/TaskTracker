@@ -403,8 +403,8 @@ const currentTask = task;
               </Typography>
 
               <List>
-                {comments.map((comment) => (
-                  <ListItem key={comment.id} alignItems="flex-start" sx={{ px: 0 }}>
+                {comments.map((comment, index) => (
+                  <ListItem key={index} alignItems="flex-start" sx={{ px: 0 }}>
                     <ListItemAvatar>
                       <Avatar sx={{ bgcolor: '#1976d2' }}>
                         {comment.avatar}

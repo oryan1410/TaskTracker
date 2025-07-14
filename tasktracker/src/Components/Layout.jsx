@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, List, ListItem, ListItemText, Button, Chip, Divider, Drawer, useTheme, useMediaQuery, IconButton } from '@mui/material';
+import { Box, Typography, List, ListItem, ListItemText, Button, Chip, Divider, Drawer, useTheme, useMediaQuery, IconButton,LinearProgress } from '@mui/material';
 import { Add as AddIcon, AssignmentTurnedIn as TaskIcon, Edit as EditIcon, Menu as MenuIcon } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useUserContext } from '../UserContext';
-import { calculateProjectProgress, calculateAverageProgress, getProgressColor } from '../utils/projectUtils';
+import { getProgressStatus, calculateAverageProgress, getProgressColor } from '../utils/projectUtils';
 
 const Layout = ({ children, onAddTask, onCategoryChange, onFilteredProjectsChange }) => {
 
@@ -269,6 +269,45 @@ const Layout = ({ children, onAddTask, onCategoryChange, onFilteredProjectsChang
                             Active Projects: {activeProjects}
                         </Typography>
                     </Box>
+                    <Box sx={{ p: 2, borderTop: '1px solid #e0e0e0', mt: 2 }}>
+  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+    Portfolio Overview
+  </Typography>
+  
+  <Box sx={{ mb: 2 }}>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+      <Typography variant="body2" color="text.secondary">
+        Overall Progress
+      </Typography>
+      <Typography variant="body2" fontWeight="bold">
+        {calculateAverageProgress(projects)}%
+      </Typography>
+    </Box>
+    
+    <LinearProgress
+      variant="determinate"
+      value={calculateAverageProgress(projects)}
+      sx={{
+        height: 6,
+        borderRadius: 3,
+        bgcolor: '#e0e0e0',
+        '& .MuiLinearProgress-bar': {
+          bgcolor: getProgressColor(calculateAverageProgress(projects)),
+          borderRadius: 3
+        }
+      }}
+    />
+    
+    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+      {getProgressStatus(calculateAverageProgress(projects))} • {projects.length} projects
+    </Typography>
+  </Box>
+  
+  <Typography variant="caption" color="text.secondary">
+    Average completion across all your projects
+  </Typography>
+</Box>
+
                 </Box>
 
                 {/* Recent Tasks Section */}

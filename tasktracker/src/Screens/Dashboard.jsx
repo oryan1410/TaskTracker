@@ -144,12 +144,6 @@ const Dashboard = ({ onAddTask, onTaskClick, tasks: propTasks, selectedCategory,
         const totalTasks = project.tasks?.length || 0;
         const completedTasks = project.tasks?.filter(task => task.status === 'Done').length || 0;
         const progress = calculateProjectProgress(project);
-        console.log(`Project: ${project.name}`, {
-            totalTasks,
-            completedTasks,
-            progress,
-            tasks: project.tasks?.map(t => ({ title: t.title, status: t.status }))
-        });
         return progress;
     };
 
