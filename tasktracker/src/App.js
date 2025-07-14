@@ -50,16 +50,10 @@ function App() {
 
 function AppContent() {
   const navigate = useNavigate();
-  const { projects, user } = useUserContext();
+  const { projects, user, filteredProjects } = useUserContext();
 
   // Current user - in a real app this would come from authentication
   const currentUser = user || "Alice";
-  
-  // State for filtered projects and selected category from Layout
-  const [filteredProjects, setFilteredProjects] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  
-
 
   // Legacy tasks array - keeping for compatibility
   const [tasks, setTasks] = useState([]);
@@ -123,17 +117,9 @@ function AppContent() {
   const goBackToDashboard = () => {
     setSelectedTask(null);
     setShowAddTask(false); // Also clear add task state
-    navigate('/');
-  };
+    // navigate back
+    { window.history.back() }
 
-  // Handle category change from Layout
-  const handleCategoryChange = (category) => {
-    setSelectedCategory(category);
-  };
-
-  // Handle filtered projects change from Layout
-  const handleFilteredProjectsChange = (projects) => {
-    setFilteredProjects(projects);
   };
 
   // TaskDetails wrapper to handle route parameters
@@ -167,10 +153,6 @@ function AppContent() {
     <div className="App">
       <Layout 
         onAddTask={() => setShowAddTask(true)}
-        projects={projects}
-        currentUser={currentUser}
-        onCategoryChange={handleCategoryChange}
-        onFilteredProjectsChange={handleFilteredProjectsChange}
       >
         <Routes>            <Route 
               path="/" 
@@ -178,9 +160,6 @@ function AppContent() {
                 <Dashboard 
                   key="dashboard"
                   tasks={getFilteredTasks()}
-                  projects={filteredProjects.length > 0 ? filteredProjects : projects}
-                  selectedCategory={selectedCategory}
-                  currentUser={currentUser}
                   onTaskClick={handleTaskClick}
                   onAddTask={() => setShowAddTask(true)}
                 />

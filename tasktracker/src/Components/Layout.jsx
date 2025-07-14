@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, List, ListItem, ListItemText, Button, Chip, Divider, Drawer, useTheme, useMediaQuery, IconButton,LinearProgress } from '@mui/material';
 import { Add as AddIcon, AssignmentTurnedIn as TaskIcon, Edit as EditIcon, Menu as MenuIcon } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -6,15 +6,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserContext } from '../UserContext';
 import { getProgressStatus, calculateAverageProgress, getProgressColor } from '../utils/projectUtils';
 
-const Layout = ({ children, onAddTask, onCategoryChange, onFilteredProjectsChange }) => {
+const Layout = ({ children, onAddTask }) => {
 
 
-    const { user, setUser, setProjects, projects } = useUserContext();
+    const { user, setUser, setProjects, projects, selectedCategory, setSelectedCategory, filteredProjects } = useUserContext();
     const currentUser = user || "Alice";
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
     const [mobileOpen, setMobileOpen] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState('All');
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -31,41 +30,10 @@ const Layout = ({ children, onAddTask, onCategoryChange, onFilteredProjectsChang
         }
     };
 
-    // Filter projects based on selected category and current user
-    const getFilteredProjects = () => {
-        if (!projects || projects.length === 0) return [];
-        
-        switch (selectedCategory) {
-            case 'Owned':
-                return projects.filter(project => project.owner === currentUser);
-            case 'Shared':
-                return projects.filter(project => 
-                    project.owner !== currentUser && 
-                    (project.users || []).some(user => user.username === currentUser)
-                );
-            case 'All':
-            default:
-                return projects.filter(project => 
-                    project.owner === currentUser || 
-                    (project.users || []).some(user => user.username === currentUser)
-                );
-        }
-    };
-
-    const filteredProjects = getFilteredProjects();
+    // Use the memoized filtered projects directly
     const allTasks = filteredProjects.flatMap(project => project.tasks);
     const totalTasks = allTasks.length;
     const activeProjects = filteredProjects.length;
-
-    // Notify parent components when category or filtered projects change
-    useEffect(() => {
-        if (onCategoryChange) {
-            onCategoryChange(selectedCategory);
-        }
-        if (onFilteredProjectsChange) {
-            onFilteredProjectsChange(filteredProjects);
-        }
-    }, [selectedCategory, projects, currentUser]);
 
     const handleCategoryChange = (category) => {
         setSelectedCategory(category);
@@ -114,7 +82,6 @@ const Layout = ({ children, onAddTask, onCategoryChange, onFilteredProjectsChang
                         ].map((category) => (
                             <ListItem
                                 key={category.value}
-                                button
                                 selected={selectedCategory === category.value}
                                 sx={{ 
                                     borderRadius: 1, 

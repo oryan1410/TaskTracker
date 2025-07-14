@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from 'react'
+import React, { useState, useEffect, createContext, useContext, useMemo } from 'react'
 
 import { useNavigate } from 'react-router-dom';
 
@@ -14,6 +14,8 @@ export function useUserContext() {
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState("Charlie");
     const [userTasks, setUserTasks] = useState([]);
+    const [selectedProject, setSelectedProject] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState('All');
 
       const [projects, setProjects] = useState([
     {
@@ -161,6 +163,31 @@ export const UserProvider = ({ children }) => {
     }
   ]);
 
+  // Memoized filtered projects - only recalculates when dependencies change
+  const filteredProjects = useMemo(() => {
+    if (!projects || projects.length === 0) return [];
+    
+    switch (selectedCategory) {
+      case 'Owned':
+        return projects.filter(project => project.owner === user);
+      case 'Shared':
+        return projects.filter(project =>
+          project.owner !== user &&
+          project.users.some(u => u.username === user)
+        );
+      case 'All':
+      default:
+        return projects.filter(project =>
+          project.owner === user ||
+          project.users.some(u => u.username === user)
+        );
+    }
+  }, [projects, selectedCategory, user]);
+
+  // Function that returns the memoized filtered projects (for backward compatibility)
+  const getFilteredProjects = () => {
+    return filteredProjects;
+  };
 
   useEffect(() => {
     
@@ -190,12 +217,45 @@ export const UserProvider = ({ children }) => {
     setUserTasks((prevTasks) => [...prevTasks, ...newProject.tasks]);
   };
 
+   const changeTaskStatus = (taskId, newStatus) => {
+        setProjects(prevProjects => {
+            const updatedProjects = prevProjects.map(project =>
+                project.id === selectedProject.id
+                    ? {
+                        ...project,
+                        tasks: project.tasks.map(task =>
+                            task.id === taskId
+                                ? { ...task, status: newStatus }
+                                : task
+                        )
+                    }
+                    : project
+            );
+
+            // Update selected project
+            const updatedSelectedProject = updatedProjects.find(p => p.id === selectedProject.id);
+            setSelectedProject(updatedSelectedProject);
+
+            return updatedProjects;
+        });
+    };
+    
+
+
   const valueToGet = {
     user,
     setUser,
     projects,
     setProjects,
-    AddProject
+    AddProject,
+    selectedProject,
+    setSelectedProject,
+    userTasks,
+    changeTaskStatus,
+    
+    filteredProjects, // Direct access to the memoized array
+    selectedCategory,
+    setSelectedCategory,
   };
 
     return (

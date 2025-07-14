@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Box, Container, Typography, Card, CardContent, LinearProgress, Button, Avatar, Chip, Grid, List, ListItem, ListItemText, Paper, Divider, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, IconButton } from '@mui/material';
-import { Add as AddIcon, Person as PersonIcon, AssignmentTurnedIn as TaskIcon, FolderOpen as ProjectIcon, Close as CloseIcon, Comment as CommentIcon, Edit as EditIcon } from '@mui/icons-material';
+import { Box, Container, Typography, Chip, Grid, Paper, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, IconButton, Button } from '@mui/material';
+import { Person as PersonIcon, FolderOpen as ProjectIcon, Close as CloseIcon } from '@mui/icons-material';
 import { useUserContext } from '../UserContext';
-import { calculateProjectProgress, getProgressColor, getProgressStatus } from '../utils/projectUtils';
+import { calculateProjectProgress } from '../utils/projectUtils';
+import ProjectCard from '../Components/ProjectCard';
+import ProjectDetails from '../Components/ProjectDetails';
 
-const Dashboard = ({ onAddTask, onTaskClick, tasks: propTasks, selectedCategory, currentUser }) => {
+const Dashboard = ({ onAddTask, onTaskClick, tasks: propTasks, currentUser }) => {
     // Reset any task selection when Dashboard mounts
     React.useEffect(() => {
         // Clear any potential task selection state when returning to dashboard
@@ -13,32 +15,8 @@ const Dashboard = ({ onAddTask, onTaskClick, tasks: propTasks, selectedCategory,
         };
     }, []);
 
-    // Use projects from props (already filtered by Layout)
-    const { projects, setProjects } = useUserContext();
-
-    const getFilteredProjects = () => {
-        if (!projects || projects.length === 0) return [];
-
-        switch (selectedCategory) {
-            case 'Owned':
-                return projects.filter(project => project.owner === currentUser);
-            case 'Shared':
-                return projects.filter(project =>
-                    project.owner !== currentUser &&
-                    project.users.some(user => user.username === currentUser)
-                );
-            case 'All':
-            default:
-                return projects.filter(project =>
-                    project.owner === currentUser ||
-                    project.users.some(user => user.username === currentUser)
-                );
-        }
-    };
-
-    // Update projects when props change
-
-    const [selectedProject, setSelectedProject] = useState(null);
+    // Use projects from context
+    const { projects, setProjects, selectedProject, setSelectedProject, changeTaskStatus, filteredProjects, selectedCategory } = useUserContext();
     const [taskDetailOpen, setTaskDetailOpen] = useState(false);
     const [addTaskOpen, setAddTaskOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
@@ -105,26 +83,7 @@ const Dashboard = ({ onAddTask, onTaskClick, tasks: propTasks, selectedCategory,
     };
 
     const handleTaskStatusChange = (taskId, newStatus) => {
-        setProjects(prevProjects => {
-            const updatedProjects = prevProjects.map(project =>
-                project.id === selectedProject.id
-                    ? {
-                        ...project,
-                        tasks: project.tasks.map(task =>
-                            task.id === taskId
-                                ? { ...task, status: newStatus }
-                                : task
-                        )
-                    }
-                    : project
-            );
-
-            // Update selected project
-            const updatedSelectedProject = updatedProjects.find(p => p.id === selectedProject.id);
-            setSelectedProject(updatedSelectedProject);
-
-            return updatedProjects;
-        });
+        changeTaskStatus(taskId, newStatus);
     };
 
     const getPriorityColor = (priority) => {
@@ -136,7 +95,7 @@ const Dashboard = ({ onAddTask, onTaskClick, tasks: propTasks, selectedCategory,
         }
     };
 
-    const filteredProjects = getFilteredProjects();
+    // Use the memoized filtered projects directly from context
     const projectTasks = selectedProject ? selectedProject.tasks : [];
 
     // Debug function to show progress calculation
@@ -153,14 +112,7 @@ const Dashboard = ({ onAddTask, onTaskClick, tasks: propTasks, selectedCategory,
                 <Grid container spacing={3} role="region" aria-labelledby="dashboard-title">
                     {/* Main Content - Full width since sidebar is now in Layout */}
                     <Grid size={{ xs: 12, lg: 8 }}>
-                        <Box
-                            component="section"
-                            aria-label="Projects overview"
-                            role="region"
-                        >
-                            {/* Projects Section */}
-                            <Box sx={{ mb: 3 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                                     <Typography
                                         variant="h5"
                                         component="h2"
@@ -180,6 +132,15 @@ const Dashboard = ({ onAddTask, onTaskClick, tasks: propTasks, selectedCategory,
                                         }}
                                     />
                                 </Box>
+                                </Grid>
+                    <Grid size={{ xs: 12, lg: 8 }}>
+                        <Box
+                            component="section"
+                            aria-label="Projects overview"
+                            role="region"
+                        >
+                            {/* Projects Section */}
+                            <Box sx={{ mb: 3 }}>
                                 <Box
                                     role="list"
                                     aria-labelledby="projects-section"
@@ -190,72 +151,13 @@ const Dashboard = ({ onAddTask, onTaskClick, tasks: propTasks, selectedCategory,
                                     </span>
                                     {filteredProjects.length > 0 ? (
                                         filteredProjects.map((project) => (
-                                            <Card
+                                            <ProjectCard
                                                 key={project.id}
-                                                sx={{
-                                                    mb: 2,
-                                                    borderRadius: 2,
-                                                    boxShadow: 2,
-                                                    cursor: 'pointer',
-                                                    border: selectedProject?.id === project.id ? '2px solid #1976d2' : '2px solid transparent',
-                                                    '&:hover': {
-                                                        boxShadow: 4,
-                                                        transform: 'translateY(-2px)',
-                                                        transition: 'all 0.3s ease'
-                                                    }
-                                                }}
-                                                role="listitem"
-                                                tabIndex={0}
-                                                aria-label={`Project: ${project.name}, ${calculateProjectProgress(project)}% complete. Click to select project.`}
-                                                onClick={() => handleProjectSelect(project)}
-                                            >
-                                                <CardContent>
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                                        <Typography
-                                                            variant="h6"
-                                                            fontWeight="bold"
-                                                            component="h3"
-                                                        >
-                                                            {project.name}
-                                                        </Typography>
-                                                        <Box sx={{ textAlign: 'right' }}>
-                                                            <Typography
-                                                                variant="body2"
-                                                                color="text.secondary"
-                                                            >
-                                                                {debugProgress(project)}%
-                                                            </Typography>
-                                                            <Typography
-                                                                variant="caption"
-                                                                color="text.secondary"
-                                                                sx={{ fontSize: '0.7rem' }}
-                                                            >
-                                                                {getProgressStatus(calculateProjectProgress(project))}
-                                                            </Typography>
-                                                        </Box>
-                                                    </Box>
-                                                    <Typography
-                                                        variant="body2"
-                                                        color="text.secondary"
-                                                        sx={{ mb: 2 }}
-                                                    >
-                                                        {project.description}
-                                                    </Typography>
-                                                    <LinearProgress
-                                                        variant="determinate"
-                                                        value={calculateProjectProgress(project)}
-                                                        sx={{
-                                                            height: 8,
-                                                            borderRadius: 4,
-                                                            bgcolor: '#e0e0e0',
-                                                            '& .MuiLinearProgress-bar': {
-                                                                bgcolor: getProgressColor(calculateProjectProgress(project)),
-                                                                borderRadius: 4
-                                                            }
-                                                        }}
-                                                    />
-                                                </CardContent>
-                                            </Card>
+                                                project={project}
+                                                selectedProject={selectedProject}
+                                                onProjectSelect={handleProjectSelect}
+                                                debugProgress={debugProgress}
+                                            />
                                         ))
                                     ) : (
                                         <Paper
@@ -278,145 +180,14 @@ const Dashboard = ({ onAddTask, onTaskClick, tasks: propTasks, selectedCategory,
                     {/* Right Sidebar - Selected Project Details */}
                     <Grid size={{ xs: 12, lg: 4 }}>
                         {selectedProject ? (
-                            <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
-                                <CardContent>
-                                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                                        {selectedProject.name}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                        {selectedProject.description}
-                                    </Typography>
-
-                                    {/* Progress Summary */}
-                                    <Box sx={{ mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-                                            Project Progress: {calculateProjectProgress(selectedProject)}%
-                                        </Typography>
-                                        <LinearProgress
-                                            variant="determinate"
-                                            value={calculateProjectProgress(selectedProject)}
-                                            sx={{
-                                                height: 6,
-                                                borderRadius: 3,
-                                                bgcolor: '#e0e0e0',
-                                                '& .MuiLinearProgress-bar': {
-                                                    bgcolor: getProgressColor(calculateProjectProgress(selectedProject)),
-                                                    borderRadius: 3
-                                                }
-                                            }}
-                                        />
-                                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                                            {getProgressStatus(calculateProjectProgress(selectedProject))} •
-                                            {projectTasks.filter(t => t.status === 'Done').length} of {projectTasks.length} tasks completed
-                                        </Typography>
-                                    </Box>
-
-                                    <Box sx={{ mb: 3 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                            <Typography variant="subtitle2" fontWeight="bold">
-                                                Tasks ({projectTasks.length})
-                                            </Typography>
-                                            <Typography variant="caption" color="text.secondary">
-                                                Progress: {calculateProjectProgress(selectedProject)}%
-                                            </Typography>
-                                        </Box>
-                                        <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-                                            {projectTasks.map((task) => (
-                                                <Card
-                                                    key={task.id}
-                                                    sx={{
-                                                        mb: 1,
-                                                        border: task.status === 'Done' ? '2px solid #4caf50' : '1px solid #e0e0e0',
-                                                        bgcolor: task.status === 'Done' ? '#f1f8e9' : 'white'
-                                                    }}
-                                                >
-                                                    <CardContent sx={{ py: 1 }}>
-                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                                            <Typography
-                                                                variant="body2"
-                                                                fontWeight="medium"
-                                                                sx={{
-                                                                    textDecoration: task.status === 'Done' ? 'line-through' : 'none',
-                                                                    color: task.status === 'Done' ? 'text.secondary' : 'text.primary'
-                                                                }}
-                                                            >
-                                                                {task.title}
-                                                            </Typography>
-                                                            <Chip
-                                                                label={task.priority}
-                                                                size="small"
-                                                                sx={{
-                                                                    bgcolor: getPriorityColor(task.priority),
-                                                                    color: 'white'
-                                                                }}
-                                                            />
-                                                        </Box>
-                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <Typography variant="caption" color="text.secondary">
-                                                                Due: {task.dueDate}
-                                                            </Typography>
-                                                            <Button
-                                                                size="small"
-                                                                variant={task.status === 'Done' ? 'outlined' : 'contained'}
-                                                                color={task.status === 'Done' ? 'default' : 'success'}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleTaskStatusChange(
-                                                                        task.id,
-                                                                        task.status === 'Done' ? 'To Do' : 'Done'
-                                                                    );
-                                                                }}
-                                                                sx={{ fontSize: '0.7rem', py: 0.5, px: 1 }}
-                                                            >
-                                                                {task.status === 'Done' ? 'Undo' : 'Complete'}
-                                                            </Button>
-
-                                                        </Box>
-                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                                                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                                                                Status: {task.status}
-                                                            </Typography>
-                                                            <Button
-                                                                size="small"
-                                                                variant="outlined"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleTaskClick(task);
-                                                                }}
-                                                                aria-label={`View details for task: ${task.title}`}
-                                                                sx={{ 
-                                                                    fontSize: '0.7rem',
-                                                                    py: 0.5, 
-                                                                    px: 1,
-                                                                    color: '#fff',
-                                                                    backgroundColor: '#1976D2',
-                                                                    '&:hover': {
-                                                                        backgroundColor: '#115293',
-                                                                    },
-                                                                }}
-                                                            >
-                                                                View Details
-                                                            </Button>
-
-                                                        </Box>
-
-
-                                                    </CardContent>
-                                                </Card>
-                                            ))}
-                                        </Box>
-                                    </Box>
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<AddIcon />}
-                                        onClick={handleAddTask}
-                                        sx={{ mb: 2 }}
-                                    >
-                                        Add Task
-                                    </Button>
-
-                                </CardContent>
-                            </Card>
+                            <ProjectDetails
+                                selectedProject={selectedProject}
+                                projectTasks={projectTasks}
+                                onAddTask={handleAddTask}
+                                handleTaskStatusChange={handleTaskStatusChange}
+                                handleTaskClick={handleTaskClick}
+                                getPriorityColor={getPriorityColor}
+                            />
                         ) : (
                             <Paper sx={{ p: 3, textAlign: 'center', bgcolor: '#f9f9f9', borderRadius: 2 }}>
                                 <ProjectIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
