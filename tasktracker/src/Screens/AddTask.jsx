@@ -29,7 +29,10 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 
-const AddProject = ({ open, onClose, onSave }) => {
+import { useUserContext } from '../UserContext';
+import { calculateAverageProgress, getProgressColor } from '../utils/projectUtils';
+
+const AddProjectModal = ({ open, onClose }) => {
   const [projectData, setProjectData] = useState({
     name: '',
     description: '',
@@ -38,6 +41,9 @@ const AddProject = ({ open, onClose, onSave }) => {
     teamMembers: []
   });
 
+      const { AddProject } = useUserContext();
+
+
   const handleInputChange = (field) => (event) => {
     setProjectData({
       ...projectData,
@@ -45,20 +51,25 @@ const AddProject = ({ open, onClose, onSave }) => {
     });
   };
 
-  const handleSave = () => {
+  const onSave = () => {
+    // Validate project data
     if (projectData.name.trim()) {
-      onSave && onSave(projectData);
-      // Reset form
-      setProjectData({
-        name: '',
-        description: '',
-        dueDate: '',
-        color: '#1976d2',
-        teamMembers: []
-      });
-      onClose && onClose();
+       console.log('Project data:', projectData);
+       //save in user context or send to API
+       AddProject(projectData);
+       onClose();
+        // Reset form
+        setProjectData({
+            name: '',
+            description: '',
+            dueDate: '',
+            color: '#1976d2',
+            teamMembers: []
+        });
+        onClose && onClose();
     }
-  };
+    };
+
 
   const handleCancel = () => {
     // Reset form
@@ -132,8 +143,9 @@ const AddProject = ({ open, onClose, onSave }) => {
               <AddProjectForm 
                 projectData={projectData}
                 onInputChange={handleInputChange}
-                onSave={handleSave}
+                onSave={onSave}
                 onCancel={handleCancel}
+                onClose={handleCancel}
               />
             </Grid>
           </Grid>
@@ -173,8 +185,9 @@ const AddProject = ({ open, onClose, onSave }) => {
         <AddProjectForm 
           projectData={projectData}
           onInputChange={handleInputChange}
-          onSave={handleSave}
+          onSave={onSave}
           onCancel={handleCancel}
+          onClose={onClose}
           isModal={true}
         />
       </DialogContent>
@@ -182,7 +195,23 @@ const AddProject = ({ open, onClose, onSave }) => {
   );
 };
 
-const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal = false }) => {
+const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal = false, onClose }) => {
+
+    const {AddProject, projects} = useUserContext();
+
+  const handleSave = () => {
+    if (projectData.name.trim()) {
+      // Call the parent's onSave if it exists
+      if (onSave) {
+        onSave(projectData);
+      }
+      
+      // Close the modal/form
+      if (onClose) {
+        onClose();
+      }
+    }
+  };
   return (
     <Box sx={{ 
       bgcolor: isModal ? 'white' : '#37474f', 
@@ -193,12 +222,12 @@ const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal 
     }}>
       <Grid container spacing={3}>
         {/* Left Section - Form */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{xs: 12, md: 8}}>
           <Box sx={{ bgcolor: isModal ? 'inherit' : 'rgba(255,255,255,0.1)', p: 3, borderRadius: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ color: isModal ? 'inherit' : 'white' }}>
               Project Details
             </Typography>
-            
+            {/* Project Name */}
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle2" gutterBottom sx={{ color: isModal ? 'text.secondary' : 'rgba(255,255,255,0.8)' }}>
                 Project Name
@@ -219,7 +248,7 @@ const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal 
                 }}
               />
             </Box>
-
+            {/* Project Description */}
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle2" gutterBottom sx={{ color: isModal ? 'text.secondary' : 'rgba(255,255,255,0.8)' }}>
                 Description
@@ -242,9 +271,9 @@ const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal 
                 }}
               />
             </Box>
-
+            {/* Project Due Date */}
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid size={{xs: 12, md: 6}}>
                 <Typography variant="subtitle2" gutterBottom sx={{ color: isModal ? 'text.secondary' : 'rgba(255,255,255,0.8)' }}>
                   Due Date
                 </Typography>
@@ -264,8 +293,8 @@ const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal 
                   }}
                 />
               </Grid>
-              
-              <Grid item xs={6}>
+              {/** Project color */}
+              <Grid size={{xs: 12, md: 6}}>
                 <Typography variant="subtitle2" gutterBottom sx={{ color: isModal ? 'text.secondary' : 'rgba(255,255,255,0.8)' }}>
                   Project Color
                 </Typography>
@@ -320,7 +349,7 @@ const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal 
                 </FormControl>
               </Grid>
             </Grid>
-
+            {/** Team Members Section */}
             <Box sx={{ mt: 3 }}>
               <Typography variant="subtitle2" gutterBottom sx={{ color: isModal ? 'text.secondary' : 'rgba(255,255,255,0.8)' }}>
                 Team Members (Optional)
@@ -344,7 +373,6 @@ const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal 
                 }}
               />
             </Box>
-
             {/* Action Buttons */}
             <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
               <Button
@@ -363,7 +391,7 @@ const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal 
               </Button>
               <Button
                 variant="contained"
-                onClick={onSave}
+                onClick={handleSave}
                 disabled={!projectData.name.trim()}
                 sx={{
                   bgcolor: '#1976d2',
@@ -436,7 +464,7 @@ const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal 
               Quick Stats
             </Typography>
             <Typography variant="body2" sx={{ color: isModal ? 'text.secondary' : 'rgba(255,255,255,0.8)' }}>
-              Progress: 0%
+              Progress: 0% (New project)
             </Typography>
             <Typography variant="body2" sx={{ color: isModal ? 'text.secondary' : 'rgba(255,255,255,0.8)' }}>
               Tasks: 0
@@ -444,6 +472,29 @@ const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal 
             <Typography variant="body2" sx={{ color: isModal ? 'text.secondary' : 'rgba(255,255,255,0.8)' }}>
               Team: {projectData.teamMembers.length} members
             </Typography>
+            
+            {/* Show average project progress for context */}
+            {projects && projects.length > 0 && (
+              <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${isModal ? '#e0e0e0' : 'rgba(255,255,255,0.2)'}` }}>
+                <Typography variant="caption" sx={{ color: isModal ? 'text.secondary' : 'rgba(255,255,255,0.6)', mb: 1, display: 'block' }}>
+                  Your Average Project Progress: {calculateAverageProgress(projects)}%
+                </Typography>
+                <Box sx={{ 
+                  width: '100%', 
+                  height: 4, 
+                  bgcolor: isModal ? '#e0e0e0' : 'rgba(255,255,255,0.2)', 
+                  borderRadius: 2,
+                  overflow: 'hidden'
+                }}>
+                  <Box sx={{ 
+                    width: `${calculateAverageProgress(projects)}%`, 
+                    height: '100%', 
+                    bgcolor: getProgressColor(calculateAverageProgress(projects)),
+                    transition: 'width 0.3s ease'
+                  }} />
+                </Box>
+              </Box>
+            )}
           </Paper>
         </Grid>
       </Grid>
@@ -451,4 +502,4 @@ const AddProjectForm = ({ projectData, onInputChange, onSave, onCancel, isModal 
   );
 };
 
-export default AddProject;
+export default AddProjectModal;

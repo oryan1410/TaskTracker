@@ -3,7 +3,14 @@ import { Box, Typography, List, ListItem, ListItemText, Button, Chip, Divider, D
 import { Add as AddIcon, AssignmentTurnedIn as TaskIcon, Edit as EditIcon, Menu as MenuIcon } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const Layout = ({ children, onAddTask, projects = [], currentUser = "Alice", onCategoryChange, onFilteredProjectsChange }) => {
+import { useUserContext } from '../UserContext';
+import { calculateProjectProgress, calculateAverageProgress, getProgressColor } from '../utils/projectUtils';
+
+const Layout = ({ children, onAddTask, onCategoryChange, onFilteredProjectsChange }) => {
+
+
+    const { user, setUser, setProjects, projects } = useUserContext();
+    const currentUser = user || "Alice";
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -34,13 +41,13 @@ const Layout = ({ children, onAddTask, projects = [], currentUser = "Alice", onC
             case 'Shared':
                 return projects.filter(project => 
                     project.owner !== currentUser && 
-                    project.users.some(user => user.username === currentUser)
+                    (project.users || []).some(user => user.username === currentUser)
                 );
             case 'All':
             default:
                 return projects.filter(project => 
                     project.owner === currentUser || 
-                    project.users.some(user => user.username === currentUser)
+                    (project.users || []).some(user => user.username === currentUser)
                 );
         }
     };
@@ -62,6 +69,10 @@ const Layout = ({ children, onAddTask, projects = [], currentUser = "Alice", onC
 
     const handleCategoryChange = (category) => {
         setSelectedCategory(category);
+        navigate('/'); // Navigate to dashboard on category change
+        if (!isMdUp) {
+            setMobileOpen(false); // Close mobile drawer on category change
+        }
     };
 
     const getPriorityColor = (priority) => {
@@ -74,16 +85,16 @@ const Layout = ({ children, onAddTask, projects = [], currentUser = "Alice", onC
     };
 
     const drawerContent = (
-        <Box sx={{ height: '100%', bgcolor: '#37474f', color: 'white' }}>
+        <Box sx={{ height: '100%', bgcolor: '#37474f', color: 'white', overflow: 'visible', minHeight: '100vh' }}>
             <Box sx={{ p: 2 }}>
-                <Typography
+                {/* <Typography
                     variant="h6"
                     gutterBottom
                     component="h2"
                     id="navigation-title"
                 >
                     TaskTracker
-                </Typography>
+                </Typography> */}
 
                 {/* Category Filter Section */}
                 <Box sx={{ mb: 2 }}>
@@ -150,57 +161,7 @@ const Layout = ({ children, onAddTask, projects = [], currentUser = "Alice", onC
 
                 <Divider sx={{ my: 1, bgcolor: 'rgba(255,255,255,0.2)' }} />
 
-                <List
-                    sx={{ py: 0 }}
-                    role="menu"
-                    aria-labelledby="navigation-title"
-                >
-                    {[
-                        { label: 'Dashboard', path: '/' },
-                        { label: 'All Tasks', path: '/tasks' },
-                        { label: 'Projects', path: '/projects' }
-                    ].map((item) => (
-                        <ListItem
-                            key={item.label}
-                            button
-                            selected={location.pathname === item.path}
-                            sx={{ 
-                                borderRadius: 1, 
-                                mb: 1,
-                                '&.Mui-selected': {
-                                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                                    '&:hover': {
-                                        bgcolor: 'rgba(255, 255, 255, 0.3)',
-                                    }
-                                },
-                                '&:hover': {
-                                    bgcolor: 'rgba(255, 255, 255, 0.1)',
-                                }
-                            }}
-                            role="menuitem"
-                            aria-current={location.pathname === item.path ? "page" : undefined}
-                            tabIndex={0}
-                            onClick={() => handleNavigation(item.path)}
-                        >
-                            <ListItemText 
-                                primary={item.label}
-                                sx={{ color: 'inherit' }}
-                            />
-                            {location.pathname === item.path && (
-                                <Chip
-                                    label="•"
-                                    size="small"
-                                    sx={{ 
-                                        bgcolor: 'rgba(255, 255, 255, 0.2)', 
-                                        color: 'white',
-                                        fontSize: '0.7rem'
-                                    }}
-                                />
-                            )}
-                        </ListItem>
-                    ))}
-                </List>
-
+                {/* Create New Project Button */}
                 <Button
                     variant="contained"
                     startIcon={<AddIcon aria-hidden="true" />}
@@ -212,28 +173,9 @@ const Layout = ({ children, onAddTask, projects = [], currentUser = "Alice", onC
                     Create New Project
                 </Button>
 
-                <Button
-                    variant="outlined"
-                    startIcon={<AddIcon aria-hidden="true" />}
-                    fullWidth
-                    sx={{ 
-                        mt: 1, 
-                        borderColor: 'rgba(255,255,255,0.3)', 
-                        color: 'white',
-                        borderRadius: 2,
-                        '&:hover': {
-                            borderColor: 'rgba(255,255,255,0.5)',
-                            bgcolor: 'rgba(255,255,255,0.1)'
-                        }
-                    }}
-                    onClick={() => handleNavigation('/add-task')}
-                    aria-label="Add new task"
-                >
-                    Add Task
-                </Button>
-
                 <Divider sx={{ my: 2, bgcolor: 'rgba(255,255,255,0.2)' }} aria-hidden="true" />
 
+                {/* Quick Navigation Links */}
                 <Box component="nav" aria-label="Quick navigation links">
                     <Typography
                         variant="subtitle2"
@@ -300,13 +242,14 @@ const Layout = ({ children, onAddTask, projects = [], currentUser = "Alice", onC
                             role="listitem"
                             tabIndex={0}
                             aria-label="Navigate to my tasks"
-                            onClick={() => handleNavigation('/tasks')}
+                            onClick={() => handleNavigation('/all-tasks')}
                         >
                             My Tasks ({totalTasks})
                         </Typography>
                     </Box>
                 </Box>
 
+                {/** Statistics Section */}
                 <Box
                     sx={{ mt: 4, p: 2, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}
                     component="section"
@@ -388,7 +331,7 @@ const Layout = ({ children, onAddTask, projects = [], currentUser = "Alice", onC
     );
 
     return (
-        <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
             {/* Navigation Drawer */}
             <Box
                 component="nav"
@@ -405,7 +348,12 @@ const Layout = ({ children, onAddTask, projects = [], currentUser = "Alice", onC
                     }}
                     sx={{
                         display: { xs: 'block', md: 'none' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                        '& .MuiDrawer-paper': { 
+                            boxSizing: 'border-box', 
+                            width: drawerWidth,
+                            position: 'relative',
+                            height: '100%'
+                        },
                     }}
                 >
                     {drawerContent}
@@ -416,7 +364,13 @@ const Layout = ({ children, onAddTask, projects = [], currentUser = "Alice", onC
                     variant="permanent"
                     sx={{
                         display: { xs: 'none', md: 'block' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                        '& .MuiDrawer-paper': { 
+                            boxSizing: 'border-box', 
+                            width: drawerWidth,
+                            position: 'relative',
+                            height: '100%',
+                            border: 'none'
+                        },
                     }}
                     open
                 >
@@ -432,7 +386,6 @@ const Layout = ({ children, onAddTask, projects = [], currentUser = "Alice", onC
                     width: { md: `calc(100% - ${drawerWidth}px)` },
                     bgcolor: '#f5f5f5',
                     minHeight: '100vh',
-                    overflow: 'auto',
                     display: 'flex',
                     flexDirection: 'column',
                 }}

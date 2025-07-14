@@ -9,6 +9,9 @@ import Dashboard from './Screens/Dashboard';
 import TaskDetails from './Screens/TaskDetails';
 import AddTask from './Screens/AddTask';
 import Layout from './Components/Layout';
+import AllTasks from './Screens/allTasks';
+import { UserProvider } from './UserContext';
+import { useUserContext } from './UserContext';
 
 // Create Material-UI theme
 const theme = createTheme({
@@ -34,180 +37,43 @@ function App() {
 
   
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <AppContent />
-      </Router>
-    </ThemeProvider>
+    <UserProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Router>
+          <AppContent />
+        </Router>
+      </ThemeProvider>
+    </UserProvider>
   );
 }
 
 function AppContent() {
   const navigate = useNavigate();
-  
+  const { projects, user } = useUserContext();
+
   // Current user - in a real app this would come from authentication
-  const currentUser = "Alice";
+  const currentUser = user || "Alice";
   
   // State for filtered projects and selected category from Layout
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
   
-  // Projects data with tasks
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      name: "Website Redesign",
-      description: "Revamp the company website",
-      due_date: "2024-12-15",
-      created_at: "2024-07-14",
-      progress: 65,
-      color: "#4caf50",
-      owner: "Alice",
-      users: [
-        { id: 1, username: "Alice", role: "Owner" },
-        { id: 2, username: "Bob", role: "Member" }
-      ],
-      tasks: [
-        {
-          id: 1,
-          title: "Design new landing page",
-          description: "Create a modern design for homepage",
-          status: "To Do",
-          priority: "High",
-          due_date: "2024-10-01",
-          dueDate: "2024-10-01",
-          assignee: "B",
-          assigneeData: { id: 2, username: "Bob" },
-          tags: [{ id: 1, name: "Design" }],
-          comments: [
-            {
-              id: 1,
-              user: { id: 1, username: "Alice" },
-              content: "Make sure to align with branding guidelines",
-              created_at: "2024-07-14"
-            }
-          ]
-        },
-        {
-          id: 2,
-          title: "Write SEO content",
-          description: "Optimize text for search engines",
-          status: "In Progress",
-          priority: "Medium",
-          due_date: "2024-09-15",
-          dueDate: "2024-09-15",
-          assignee: "A",
-          assigneeData: { id: 1, username: "Alice" },
-          tags: [{ id: 2, name: "Content" }],
-          comments: []
-        },
-        {
-          id: 3,
-          title: "Test mobile responsiveness",
-          description: "Ensure website works on all devices",
-          status: "Done",
-          priority: "High",
-          due_date: "2024-08-30",
-          dueDate: "2024-08-30",
-          assignee: "B",
-          assigneeData: { id: 2, username: "Bob" },
-          tags: [{ id: 3, name: "Testing" }],
-          comments: []
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: "Mobile App Development",
-      description: "Build iOS and Android apps",
-      due_date: "2024-11-30",
-      created_at: "2024-06-01",
-      progress: 30,
-      color: "#2196f3",
-      owner: "Charlie",
-      users: [
-        { id: 3, username: "Charlie", role: "Owner" },
-        { id: 1, username: "Alice", role: "Member" }
-      ],
-      tasks: [
-        {
-          id: 4,
-          title: "Setup development environment",
-          description: "Configure React Native project",
-          status: "Done",
-          priority: "High",
-          due_date: "2024-07-01",
-          dueDate: "2024-07-01",
-          assignee: "C",
-          assigneeData: { id: 3, username: "Charlie" },
-          tags: [{ id: 4, name: "Setup" }],
-          comments: []
-        },
-        {
-          id: 5,
-          title: "Design app wireframes",
-          description: "Create UI/UX mockups",
-          status: "To Do",
-          priority: "Medium",
-          due_date: "2024-09-01",
-          dueDate: "2024-09-01",
-          assignee: "A",
-          assigneeData: { id: 1, username: "Alice" },
-          tags: [{ id: 1, name: "Design" }],
-          comments: []
-        }
-      ]
-    },
-    {
-      id: 3,
-      name: "Backend API Refactor",
-      description: "Modernize backend architecture",
-      due_date: "2024-10-15",
-      created_at: "2024-08-01",
-      progress: 80,
-      color: "#ff9800",
-      owner: "Bob",
-      users: [
-        { id: 2, username: "Bob", role: "Owner" },
-        { id: 3, username: "Charlie", role: "Member" }
-      ],
-      tasks: [
-        {
-          id: 6,
-          title: "Database migration",
-          description: "Move to PostgreSQL",
-          status: "Done",
-          priority: "High",
-          due_date: "2024-08-15",
-          dueDate: "2024-08-15",
-          assignee: "B",
-          assigneeData: { id: 2, username: "Bob" },
-          tags: [{ id: 5, name: "Database" }],
-          comments: []
-        },
-        {
-          id: 7,
-          title: "API documentation",
-          description: "Update all endpoint docs",
-          status: "In Progress",
-          priority: "Low",
-          due_date: "2024-09-30",
-          dueDate: "2024-09-30",
-          assignee: "C",
-          assigneeData: { id: 3, username: "Charlie" },
-          tags: [{ id: 6, name: "Documentation" }],
-          comments: []
-        }
-      ]
-    }
-  ]);
+
 
   // Legacy tasks array - keeping for compatibility
   const [tasks, setTasks] = useState([]);
 
   const [selectedTask, setSelectedTask] = useState(null);
   const [showAddTask, setShowAddTask] = useState(false);
+
+  // Get tasks from filtered projects based on current category
+  const getFilteredTasks = () => {
+    if (filteredProjects.length > 0) {
+      return filteredProjects.flatMap(project => project.tasks);
+    }
+    return getAllTasks();
+  };
 
   // Get all tasks from all projects
   const getAllTasks = () => {
@@ -230,7 +96,7 @@ function AppContent() {
     navigate(`/task/${task.id}`);
   };
 
-  const handleAddTask = (taskData) => {
+  const handleAddProject = (taskData) => {
     const newTask = {
       id: Date.now(),
       ...taskData,
@@ -311,7 +177,7 @@ function AppContent() {
               element={
                 <Dashboard 
                   key="dashboard"
-                  tasks={getAllTasks()}
+                  tasks={getFilteredTasks()}
                   projects={filteredProjects.length > 0 ? filteredProjects : projects}
                   selectedCategory={selectedCategory}
                   currentUser={currentUser}
@@ -329,10 +195,20 @@ function AppContent() {
             element={
               <AddTask 
                 open={false}
-                onSave={handleAddTask}
+                onSave={handleAddProject}
                 onClose={goBackToDashboard}
               />
             } 
+          />
+          <Route 
+            path="/all-tasks" 
+            element={
+              <AllTasks 
+                tasks={getFilteredTasks()} 
+                onTaskClick={handleTaskClick}
+                onAddTask={() => setShowAddTask(true)}
+              />
+            }
           />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
@@ -342,7 +218,7 @@ function AppContent() {
       {showAddTask && (
         <AddTask 
           open={showAddTask}
-          onSave={handleAddTask}
+          onSave={handleAddProject}
           onClose={() => setShowAddTask(false)}
         />
       )}
