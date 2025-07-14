@@ -4,17 +4,18 @@ import { Add as AddIcon } from '@mui/icons-material';
 import { calculateProjectProgress, getProgressColor, getProgressStatus } from '../utils/projectUtils';
 import TaskItem from './TaskItem';
 
-const ProjectDetails = ({ 
+const ProjectDetails = ({
   selectedProject,
   projectTasks,
   onAddTask,
   handleTaskStatusChange,
   handleTaskClick,
-  getPriorityColor 
+  getPriorityColor
 }) => {
   return (
     <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
       <CardContent>
+        {/* Project Header */}
         <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
           {selectedProject.name}
         </Typography>
@@ -40,19 +41,18 @@ const ProjectDetails = ({
               }
             }}
           />
+          {/** Task Completion Status */}
           <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
             {getProgressStatus(calculateProjectProgress(selectedProject))} •
             {projectTasks.filter(t => t.status === 'Done').length} of {projectTasks.length} tasks completed
           </Typography>
         </Box>
 
+        {/* Task List */}
         <Box sx={{ mb: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
             <Typography variant="subtitle2" fontWeight="bold">
               Tasks ({projectTasks.length})
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Progress: {calculateProjectProgress(selectedProject)}%
             </Typography>
           </Box>
           <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
@@ -67,7 +67,7 @@ const ProjectDetails = ({
             ))}
           </Box>
         </Box>
-        
+
         <Button
           variant="contained"
           startIcon={<AddIcon />}

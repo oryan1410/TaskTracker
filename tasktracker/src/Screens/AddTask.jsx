@@ -1,34 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Avatar,
-  Grid,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Divider
-} from '@mui/material';
-import {
-  Person as PersonIcon,
-  FolderOpen as ProjectIcon,
-  Close as CloseIcon
-} from '@mui/icons-material';
-
+import {Box,Container,  Typography,Card,CardContent,Button,Avatar,Grid,TextField,FormControl,InputLabel,Select,MenuItem,Paper,List,ListItem,ListItemText,Dialog,DialogTitle,DialogContent,DialogActions,Divider} from '@mui/material';
+import {Person as PersonIcon,FolderOpen as ProjectIcon,Close as CloseIcon} from '@mui/icons-material';
 import { useUserContext } from '../UserContext';
 import { calculateAverageProgress, getProgressColor } from '../utils/projectUtils';
 

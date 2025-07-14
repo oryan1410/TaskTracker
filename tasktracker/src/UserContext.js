@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext, useMemo } from 'react'
+import React, { useState, useEffect, createContext, useContext, useMemo, use } from 'react'
 
 import { useNavigate } from 'react-router-dom';
 
@@ -12,10 +12,11 @@ export function useUserContext() {
 
   
 export const UserProvider = ({ children }) => {
-    const [user, setUser] = useState("Charlie");
+    const [user, setUser] = useState("Alice");
     const [userTasks, setUserTasks] = useState([]);
     const [selectedProject, setSelectedProject] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('All');
+    const [userProjects, setUserProjects] = useState([]);
 
       const [projects, setProjects] = useState([
     {
@@ -130,7 +131,8 @@ export const UserProvider = ({ children }) => {
       owner: "Bob",
       users: [
         { id: 2, username: "Bob", role: "Owner" },
-        { id: 3, username: "Charlie", role: "Member" }
+        { id: 3, username: "Charlie", role: "Member" },
+        { id: 1, username: "Alice", role: "Member" }
       ],
       tasks: [
         {
@@ -163,6 +165,16 @@ export const UserProvider = ({ children }) => {
     }
   ]);
 
+      const getPriorityColor = (priority) => {
+        switch (priority) {
+            case 'High': return '#f44336';
+            case 'Medium': return '#ff9800';
+            case 'Low': return '#4caf50';
+            default: return '#9e9e9e';
+        }
+    };
+
+  
   // Memoized filtered projects - only recalculates when dependencies change
   const filteredProjects = useMemo(() => {
     if (!projects || projects.length === 0) return [];
@@ -183,6 +195,15 @@ export const UserProvider = ({ children }) => {
         );
     }
   }, [projects, selectedCategory, user]);
+
+  useEffect(() => {
+    // Update userProjects whenever projects or user changes
+    setUserProjects(filteredProjects);
+  }, [filteredProjects, user, projects]);
+
+  useEffect(() => {
+    console.log('userProjects updated:', userProjects);
+  }, [userProjects]);
 
   // Function that returns the memoized filtered projects (for backward compatibility)
   const getFilteredProjects = () => {
@@ -256,6 +277,8 @@ export const UserProvider = ({ children }) => {
     filteredProjects, // Direct access to the memoized array
     selectedCategory,
     setSelectedCategory,
+    getPriorityColor,
+    userProjects
   };
 
     return (

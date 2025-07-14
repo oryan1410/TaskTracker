@@ -49,6 +49,7 @@ export const calculateAverageProgress = (projects) => {
     return 0;
   }
   
+  
   const totalProgress = projects.reduce((sum, project) => {
     return sum + calculateProjectProgress(project);
   }, 0);

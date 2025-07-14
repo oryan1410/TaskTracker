@@ -16,7 +16,8 @@ const TaskItem = ({
       }}
     >
       <CardContent sx={{ py: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        {/* Task Title and Priority */}
+        <Box sx={styles.priorityBox}>
           <Typography
             variant="body2"
             fontWeight="medium"
@@ -90,3 +91,9 @@ const TaskItem = ({
 };
 
 export default TaskItem;
+
+const styles = {
+    priorityBox: {
+       display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1
+    },
+};

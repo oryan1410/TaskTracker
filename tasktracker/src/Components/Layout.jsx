@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, List, ListItem, ListItemText, Button, Chip, Divider, Drawer, useTheme, useMediaQuery, IconButton,LinearProgress } from '@mui/material';
+import { Box, Typography, List, ListItem, ListItemText, Button, Chip, Divider, Drawer, useTheme, useMediaQuery, IconButton, LinearProgress } from '@mui/material';
 import { Add as AddIcon, AssignmentTurnedIn as TaskIcon, Edit as EditIcon, Menu as MenuIcon } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -9,7 +9,7 @@ import { getProgressStatus, calculateAverageProgress, getProgressColor } from '.
 const Layout = ({ children, onAddTask }) => {
 
 
-    const { user, setUser, setProjects, projects, selectedCategory, setSelectedCategory, filteredProjects } = useUserContext();
+    const { user, setUser, setProjects, projects, userProjects, selectedCategory, setSelectedCategory, filteredProjects, getPriorityColor } = useUserContext();
     const currentUser = user || "Alice";
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -43,14 +43,6 @@ const Layout = ({ children, onAddTask }) => {
         }
     };
 
-    const getPriorityColor = (priority) => {
-        switch (priority) {
-            case 'High': return '#f44336';
-            case 'Medium': return '#ff9800';
-            case 'Low': return '#4caf50';
-            default: return '#9e9e9e';
-        }
-    };
 
     const drawerContent = (
         <Box sx={{ height: '100%', bgcolor: '#37474f', color: 'white', overflow: 'visible', minHeight: '100vh' }}>
@@ -83,8 +75,8 @@ const Layout = ({ children, onAddTask }) => {
                             <ListItem
                                 key={category.value}
                                 selected={selectedCategory === category.value}
-                                sx={{ 
-                                    borderRadius: 1, 
+                                sx={{
+                                    borderRadius: 1,
                                     mb: 0.5,
                                     py: 0.5,
                                     '&.Mui-selected': {
@@ -99,9 +91,9 @@ const Layout = ({ children, onAddTask }) => {
                                 }}
                                 onClick={() => handleCategoryChange(category.value)}
                             >
-                                <ListItemText 
+                                <ListItemText
                                     primary={category.label}
-                                    sx={{ 
+                                    sx={{
                                         color: 'inherit',
                                         '& .MuiListItemText-primary': {
                                             fontSize: '0.9rem'
@@ -112,8 +104,8 @@ const Layout = ({ children, onAddTask }) => {
                                     <Chip
                                         label="•"
                                         size="small"
-                                        sx={{ 
-                                            bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                                        sx={{
+                                            bgcolor: 'rgba(255, 255, 255, 0.2)',
                                             color: 'white',
                                             fontSize: '0.7rem',
                                             height: '18px',
@@ -167,7 +159,7 @@ const Layout = ({ children, onAddTask }) => {
                                 textAlign: 'left',
                                 p: 1,
                                 borderRadius: 1,
-                                '&:hover': { 
+                                '&:hover': {
                                     bgcolor: 'rgba(255, 255, 255, 0.1)',
                                     textDecoration: 'none'
                                 },
@@ -197,7 +189,7 @@ const Layout = ({ children, onAddTask }) => {
                                 textAlign: 'left',
                                 p: 1,
                                 borderRadius: 1,
-                                '&:hover': { 
+                                '&:hover': {
                                     bgcolor: 'rgba(255, 255, 255, 0.1)',
                                     textDecoration: 'none'
                                 },
@@ -237,43 +229,43 @@ const Layout = ({ children, onAddTask }) => {
                         </Typography>
                     </Box>
                     <Box sx={{ p: 2, borderTop: '1px solid #e0e0e0', mt: 2 }}>
-  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-    Portfolio Overview
-  </Typography>
-  
-  <Box sx={{ mb: 2 }}>
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-      <Typography variant="body2" color="text.secondary">
-        Overall Progress
-      </Typography>
-      <Typography variant="body2" fontWeight="bold">
-        {calculateAverageProgress(projects)}%
-      </Typography>
-    </Box>
-    
-    <LinearProgress
-      variant="determinate"
-      value={calculateAverageProgress(projects)}
-      sx={{
-        height: 6,
-        borderRadius: 3,
-        bgcolor: '#e0e0e0',
-        '& .MuiLinearProgress-bar': {
-          bgcolor: getProgressColor(calculateAverageProgress(projects)),
-          borderRadius: 3
-        }
-      }}
-    />
-    
-    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-      {getProgressStatus(calculateAverageProgress(projects))} • {projects.length} projects
-    </Typography>
-  </Box>
-  
-  <Typography variant="caption" color="text.secondary">
-    Average completion across all your projects
-  </Typography>
-</Box>
+                        <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                            Portfolio Overview
+                        </Typography>
+
+                        <Box sx={{ mb: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    Overall Progress
+                                </Typography>
+                                <Typography variant="body2" fontWeight="bold">
+                                    {calculateAverageProgress(userProjects)}%
+                                </Typography>
+                            </Box>
+
+                            <LinearProgress
+                                variant="determinate"
+                                value={calculateAverageProgress(userProjects)}
+                                sx={{
+                                    height: 6,
+                                    borderRadius: 3,
+                                    bgcolor: '#e0e0e0',
+                                    '& .MuiLinearProgress-bar': {
+                                        bgcolor: getProgressColor(calculateAverageProgress(userProjects)),
+                                        borderRadius: 3
+                                    }
+                                }}
+                            />
+
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                {getProgressStatus(calculateAverageProgress(userProjects))} • {userProjects.length} projects
+                            </Typography>
+                        </Box>
+
+                        {/* <Typography variant="caption" color="text.secondary">
+                            Average completion across all your projects
+                        </Typography> */}
+                    </Box>
 
                 </Box>
 
@@ -352,32 +344,15 @@ const Layout = ({ children, onAddTask }) => {
                     ModalProps={{
                         keepMounted: true, // Better open performance on mobile.
                     }}
-                    sx={{
-                        display: { xs: 'block', md: 'none' },
-                        '& .MuiDrawer-paper': { 
-                            boxSizing: 'border-box', 
-                            width: drawerWidth,
-                            position: 'relative',
-                            height: '100%'
-                        },
-                    }}
+                    sx={styles.mobileDrawer}
                 >
                     {drawerContent}
                 </Drawer>
-                
+
                 {/* Desktop Drawer */}
                 <Drawer
                     variant="permanent"
-                    sx={{
-                        display: { xs: 'none', md: 'block' },
-                        '& .MuiDrawer-paper': { 
-                            boxSizing: 'border-box', 
-                            width: drawerWidth,
-                            position: 'relative',
-                            height: '100%',
-                            border: 'none'
-                        },
-                    }}
+                    sx={styles.desktopDrawer}
                     open
                 >
                     {drawerContent}
@@ -387,14 +362,7 @@ const Layout = ({ children, onAddTask }) => {
             {/* Main content */}
             <Box
                 component="main"
-                sx={{
-                    flexGrow: 1,
-                    width: { md: `calc(100% - ${drawerWidth}px)` },
-                    bgcolor: '#f5f5f5',
-                    minHeight: '100vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}
+                sx={styles.mainBox}
             >
                 {/* App Bar for mobile menu button */}
                 <Box
@@ -430,3 +398,34 @@ const Layout = ({ children, onAddTask }) => {
 };
 
 export default Layout;
+
+const styles = {
+    mobileDrawer: {
+        display: { xs: 'block', md: 'none' },
+        '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: 300,
+            position: 'relative',
+            height: '100%'
+        },
+    },
+    desktopDrawer: {
+        display: { xs: 'none', md: 'block' },
+        '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: 300,
+            position: 'relative',
+            height: '100%',
+            border: 'none'
+        },
+    },
+    mainBox: {
+        flexGrow: 1,
+        width: { md: `calc(100% - 300px)` },
+        bgcolor: '#f5f5f5',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+    }
+};
+
