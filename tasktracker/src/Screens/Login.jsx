@@ -10,11 +10,22 @@ import {
   GitHub as GitHubIcon
 } from '@mui/icons-material';
 
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from '../firebase_setup/firebase';
+import {Dialog, DialogTitle, DialogContent, DialogActions} from '@mui/material';
+
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+
+  const [newUserOpen, setNewUserOpen] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    email: '',
+    password: ''
+  });
+
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -81,6 +92,61 @@ const Login = ({ onLogin }) => {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+  const handleNewUserChange = (field) => (event) => {
+    setNewUserData({
+      ...newUserData,
+      [field]: event.target.value
+    });
+  };
+
+  const handleNewUserSubmit = async (event) => {
+    event.preventDefault();
+    
+    console.log('New user data:', newUserData);
+    
+    // Validate new user data
+    if (!newUserData.email || !newUserData.password) {
+      alert('Please fill in both email and password');
+      return;
+    }
+    
+    if (!/\S+@\S+\.\S+/.test(newUserData.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+    
+    if (newUserData.password.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
+
+    // Store the user data before clearing the form
+    const userDataToCreate = { ...newUserData };
+    
+    try {
+      // Create user with Firebase
+      const userCredential = await createUserWithEmailAndPassword(auth, userDataToCreate.email, userDataToCreate.password);
+      console.log('New user created:', userCredential.user);
+      
+      // Close the dialog and clear form after successful creation
+      setNewUserOpen(false);
+      setNewUserData({ email: '', password: '' });
+      
+      // Call onLogin to authenticate the new user
+      if (onLogin) {
+        onLogin({
+          email: userDataToCreate.email,
+          password: userDataToCreate.password,
+          isNewUser: true
+        });
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      alert('Error creating user: ' + error.message);
+    }
+  };
+
 
   return (
     <Box
@@ -274,6 +340,8 @@ const Login = ({ onLogin }) => {
                   }}
                   onClick={(e) => {
                     e.preventDefault();
+                    setNewUserOpen(true);
+                    
                     console.log('Sign up clicked');
                     // TODO: Add navigation to sign up page
                   }}
@@ -307,6 +375,42 @@ const Login = ({ onLogin }) => {
           </CardContent>
         </Card>
       </Container>
+
+        {/* New User Dialog */} 
+        <Dialog open={newUserOpen} onClose={() => setNewUserOpen(false)} maxWidth="sm" fullWidth>
+            <DialogTitle>Create New Account</DialogTitle>
+            <DialogContent>
+                <Box component="form" onSubmit={handleNewUserSubmit}>
+                <TextField
+                    fullWidth
+                    label="Email Address"
+                    type="email"
+                    value={newUserData.email}
+                    onChange={handleNewUserChange('email')}
+                    sx={{ mb: 2 }}
+                />
+                <TextField
+                    fullWidth
+                    label="Password"
+                    type="password"
+                    value={newUserData.password}
+                    onChange={handleNewUserChange('password')}
+                    sx={{ mb: 2 }}
+                />
+                <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                >
+                    Create Account
+                </Button>
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setNewUserOpen(false)}>Cancel</Button>
+            </DialogActions>
+        </Dialog>
     </Box>
   );
 };
