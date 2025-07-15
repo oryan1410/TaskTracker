@@ -129,14 +129,12 @@ function AppContent() {
 
   // Handle login success
   const handleLogin = async (loginData) => {
-    console.log('Login successful:', loginData);
     let auth = await handleUserLogin(loginData);
     if (!auth) {
       alert('Login failed');
       return;
     }
     // Set authenticated state
-    alert('Setting authenticated state');
     setIsAuthenticated(true);
     navigate('/dashboard');
   };

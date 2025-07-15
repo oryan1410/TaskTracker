@@ -77,7 +77,7 @@ const Login = ({ onLogin }) => {
     console.log('Google login clicked');
     // For demo purposes, simulate successful login
     if (onLogin) {
-      onLogin({ email: 'demo@google.com', provider: 'google' });
+      onLogin({ email: 'demo@tasktracker.com', password: 'demo123', provider: 'Google' });
     }
   };
 
@@ -85,7 +85,7 @@ const Login = ({ onLogin }) => {
     console.log('GitHub login clicked');
     // For demo purposes, simulate successful login
     if (onLogin) {
-      onLogin({ email: 'demo@github.com', provider: 'github' });
+      onLogin({ email: 'demo@tasktracker.com', provider: 'GitHub', password: 'demo123' });
     }
   };
 
@@ -101,10 +101,7 @@ const Login = ({ onLogin }) => {
   };
 
   const handleNewUserSubmit = async (event) => {
-    event.preventDefault();
-    
-    console.log('New user data:', newUserData);
-    
+    event.preventDefault();    
     // Validate new user data
     if (!newUserData.email || !newUserData.password) {
       alert('Please fill in both email and password');
@@ -126,9 +123,7 @@ const Login = ({ onLogin }) => {
     
     try {
       // Create user with Firebase
-      const userCredential = await createUserWithEmailAndPassword(auth, userDataToCreate.email, userDataToCreate.password);
-      console.log('New user created:', userCredential.user);
-      
+      const userCredential = await createUserWithEmailAndPassword(auth, userDataToCreate.email, userDataToCreate.password);      
       // Close the dialog and clear form after successful creation
       setNewUserOpen(false);
       setNewUserData({ email: '', password: '' });
@@ -143,7 +138,6 @@ const Login = ({ onLogin }) => {
       }
     } catch (error) {
       console.error('Error creating user:', error);
-      alert('Error creating user: ' + error.message);
     }
   };
 
