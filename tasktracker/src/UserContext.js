@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext, useMemo, use } from 'react'
+import React, { useState, useEffect, createContext, useContext, useMemo, useCallback } from 'react'
 
 import { useNavigate } from 'react-router-dom';
 
@@ -9,16 +9,7 @@ export function useUserContext() {
     return useContext(UserContext)
 }
   // Projects data with tasks
-
-  
-export const UserProvider = ({ children }) => {
-    const [user, setUser] = useState("Alice");
-    const [userTasks, setUserTasks] = useState([]);
-    const [selectedProject, setSelectedProject] = useState(null);
-    const [selectedCategory, setSelectedCategory] = useState('All');
-    const [userProjects, setUserProjects] = useState([]);
-
-      const [projects, setProjects] = useState([
+const initialProjects = [
     {
       id: 1,
       name: "Website Redesign",
@@ -56,14 +47,15 @@ export const UserProvider = ({ children }) => {
           id: 2,
           title: "Write SEO content",
           description: "Optimize text for search engines",
-          status: "In Progress",
+          status: "Done",
           priority: "Medium",
           due_date: "2024-09-15",
           dueDate: "2024-09-15",
           assignee: "A",
           assigneeData: { id: 1, username: "Alice" },
           tags: [{ id: 2, name: "Content" }],
-          comments: []
+          comments: [],
+          completed_at: "2025-07-12"
         },
         {
           id: 3,
@@ -163,18 +155,42 @@ export const UserProvider = ({ children }) => {
         }
       ]
     }
-  ]);
+  ];
 
-      const getPriorityColor = (priority) => {
+  
+export const UserProvider = ({ children }) => {
+    const [user, setUser] = useState("Alice");
+    const [userTasks, setUserTasks] = useState([]);
+    const [selectedProject, setSelectedProject] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState('All');
+    const [allTasks, setAllTasks] = useState([]);
+    
+    const [projects, setProjects] = useState(initialProjects);
+
+      const getPriorityColor = useCallback((priority) => {
         switch (priority) {
             case 'High': return '#f44336';
             case 'Medium': return '#ff9800';
             case 'Low': return '#4caf50';
             default: return '#9e9e9e';
         }
-    };
+    }, []);
 
-  
+
+     useEffect(() => {
+        const updatedAllTasks = projects.flatMap(project => project.tasks || []);
+        setAllTasks(updatedAllTasks);
+    }, [projects]);
+    
+
+    const updateAllTasks = useCallback((task) => {
+        setAllTasks(prevTasks => [...prevTasks, task]);
+    }, []);
+
+    // useEffect(() => {
+    //     console.log('All tasks updated:', allTasks);
+    // }, [allTasks]);
+
   // Memoized filtered projects - only recalculates when dependencies change
   const filteredProjects = useMemo(() => {
     if (!projects || projects.length === 0) return [];
@@ -196,25 +212,20 @@ export const UserProvider = ({ children }) => {
     }
   }, [projects, selectedCategory, user]);
 
-  useEffect(() => {
-    // Update userProjects whenever projects or user changes
-    setUserProjects(filteredProjects);
-  }, [filteredProjects, user, projects]);
+  // Separate memoized userProjects if still needed
+  const userProjects = useMemo(() => {
+    if (!projects || projects.length === 0) return [];
+    return projects.filter(project => project.users.some(u => u.username === user));
+  }, [projects, user]);
 
-  useEffect(() => {
-    console.log('userProjects updated:', userProjects);
-  }, [userProjects]);
+
 
   // Function that returns the memoized filtered projects (for backward compatibility)
   const getFilteredProjects = () => {
     return filteredProjects;
   };
 
-  useEffect(() => {
-    
-    }, [user, projects]);
-
-  const AddProject = (projectData) => {
+  const AddProject = useCallback((projectData) => {
     const newProject = {
       id: Date.now(),
       name: projectData.name,
@@ -236,19 +247,30 @@ export const UserProvider = ({ children }) => {
     
     setProjects((prevProjects) => [...prevProjects, newProject]);
     setUserTasks((prevTasks) => [...prevTasks, ...newProject.tasks]);
-  };
+  }, [user]);
 
-   const changeTaskStatus = (taskId, newStatus) => {
+   const changeTaskStatus = useCallback((taskId, newStatus) => {
         setProjects(prevProjects => {
             const updatedProjects = prevProjects.map(project =>
                 project.id === selectedProject.id
                     ? {
-                        ...project,
-                        tasks: project.tasks.map(task =>
-                            task.id === taskId
-                                ? { ...task, status: newStatus }
-                                : task
-                        )
+                         ...project,
+                    tasks: project.tasks.map(task =>
+                        task.id === taskId
+                            ? { 
+                                ...task, 
+                                status: newStatus,
+                                // Add completion timestamp when task is marked as Done
+                                ...(newStatus === 'Done' && task.status !== 'Done' 
+                                    ? { completed_at: new Date().toISOString().split('T')[0] }
+                                    : {}),
+                                // Remove completion timestamp if task is moved back from Done
+                                ...(newStatus !== 'Done' && task.status === 'Done' 
+                                    ? { completed_at: undefined }
+                                    : {})
+                            }
+                            : task
+                    )
                     }
                     : project
             );
@@ -259,11 +281,77 @@ export const UserProvider = ({ children }) => {
 
             return updatedProjects;
         });
-    };
+    }, [selectedProject]);
+
+    const updateProject = useCallback((updatedProject) => {
+        setProjects(prevProjects => 
+            prevProjects.map(project => 
+                project.id === updatedProject.id ? updatedProject : project
+            )
+        );
+        
+        // Update selected project if it's the one being updated
+        if (selectedProject && selectedProject.id === updatedProject.id) {
+            setSelectedProject(updatedProject);
+        }
+    }, [selectedProject]);
+
+    const addPartnerToProject = useCallback((projectId, partner) => {
+        setProjects(prevProjects => 
+            prevProjects.map(project => 
+                project.id === projectId 
+                    ? {
+                        ...project,
+                        users: [...(project.users || []), partner]
+                    }
+                    : project
+            )
+        );
+    }, []);
+
+    const removePartnerFromProject = useCallback((projectId, partnerId) => {
+        setProjects(prevProjects => 
+            prevProjects.map(project => 
+                project.id === projectId 
+                    ? {
+                        ...project,
+                        users: (project.users || []).filter(user => user.id !== partnerId)
+                    }
+                    : project
+            )
+        );
+    }, []);
+
+    const updateTask = useCallback((updatedTask) => {
+        setProjects(prevProjects => {
+            const updatedProjects = prevProjects.map(project => {
+                // Find the project that contains this task
+                const taskExists = project.tasks.some(t => t.id === updatedTask.id);
+                if (taskExists) {
+                    const updatedProject = {
+                        ...project,
+                        tasks: project.tasks.map(t => 
+                            t.id === updatedTask.id ? { ...t, ...updatedTask } : t
+                        )
+                    };
+                    
+                    // Update selected project if this is the selected project
+                    if (selectedProject && selectedProject.id === project.id) {
+                        setSelectedProject(updatedProject);
+                    }
+                    
+                    return updatedProject;
+                }
+                return project;
+            });
+            
+            return updatedProjects;
+        });
+    }, [selectedProject]);
     
 
 
-  const valueToGet = {
+  const valueToGet = useMemo(() => ({
     user,
     setUser,
     projects,
@@ -273,13 +361,26 @@ export const UserProvider = ({ children }) => {
     setSelectedProject,
     userTasks,
     changeTaskStatus,
-    
-    filteredProjects, // Direct access to the memoized array
+    filteredProjects,
     selectedCategory,
     setSelectedCategory,
     getPriorityColor,
-    userProjects
-  };
+    userProjects,
+    allTasks,
+    updateAllTasks,
+    updateProject,
+    addPartnerToProject,
+    removePartnerFromProject,
+    updateTask,
+  }), [
+    user,
+    projects,
+    selectedProject,
+    userTasks,
+    selectedCategory,
+    allTasks
+    // Remove memoized values from dependencies - they're derived
+  ]);
 
     return (
         <UserContext.Provider value={valueToGet}>

@@ -13,8 +13,8 @@ const ProjectDetails = ({
   getPriorityColor
 }) => {
   return (
-    <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
-      <CardContent>
+    <Card sx={{ borderRadius: 2, boxShadow: 2,height:'fit-content', minHeight: 'auto' }}>
+      <CardContent >
         {/* Project Header */}
         <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
           {selectedProject.name}
@@ -55,7 +55,7 @@ const ProjectDetails = ({
               Tasks ({projectTasks.length})
             </Typography>
           </Box>
-          <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+          <Box >
             {projectTasks.map((task) => (
               <TaskItem
                 key={task.id}
@@ -78,6 +78,7 @@ const ProjectDetails = ({
         </Button>
       </CardContent>
     </Card>
+    
   );
 };
 

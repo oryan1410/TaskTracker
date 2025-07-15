@@ -45,6 +45,7 @@ export const getProjectTaskStats = (project) => {
  * @returns {number} - Average progress percentage (0-100)
  */
 export const calculateAverageProgress = (projects) => {
+    console.log('Calculating average progress for projects:', projects);
   if (!projects || projects.length === 0) {
     return 0;
   }

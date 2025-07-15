@@ -26,7 +26,6 @@ const AddProjectModal = ({ open, onClose }) => {
   const onSave = () => {
     // Validate project data
     if (projectData.name.trim()) {
-       console.log('Project data:', projectData);
        //save in user context or send to API
        AddProject(projectData);
        onClose();

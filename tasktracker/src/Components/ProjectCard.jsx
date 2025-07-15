@@ -1,5 +1,7 @@
 import React from 'react';
-import { Card, CardContent, Box, Typography, LinearProgress, linearProgressClasses } from '@mui/material';
+import { Card, CardContent, Box, Typography, LinearProgress, linearProgressClasses, Button, IconButton } from '@mui/material';
+import { Info as InfoIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { calculateProjectProgress, getProgressColor, getProgressStatus } from '../utils/projectUtils';
 
 const ProjectCard = ({
@@ -8,6 +10,13 @@ const ProjectCard = ({
     onProjectSelect,
     debugProgress
 }) => {
+    const navigate = useNavigate();
+
+    const handleOverviewClick = (e) => {
+        e.stopPropagation(); // Prevent triggering the card click
+        navigate(`/project/${project.id}`);
+    };
+
     return (
         <Card
             sx={{
@@ -23,13 +32,23 @@ const ProjectCard = ({
                     <Typography variant="h6" fontWeight="bold" component="h3">
                         {project.name}
                     </Typography>
-                    <Box sx={{ textAlign: 'right' }}>
-                        <Typography variant="body2" color="text.secondary">
-                            {debugProgress(project)}%
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                            {getProgressStatus(calculateProjectProgress(project))}
-                        </Typography>
+                    <Box className='project-progress' sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ textAlign: 'right' }}>
+                            <Typography variant="body2" color="text.secondary">
+                                {debugProgress(project)}%
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                {getProgressStatus(calculateProjectProgress(project))}
+                            </Typography>
+                        </Box>
+                        <IconButton
+                            size="small"
+                            onClick={handleOverviewClick}
+                            sx={{ ml: 1 }}
+                            aria-label={`View ${project.name} overview`}
+                        >
+                            <InfoIcon />
+                        </IconButton>
                     </Box>
                 </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

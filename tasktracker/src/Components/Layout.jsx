@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, Typography, List, ListItem, ListItemText, Button, Chip, Divider, Drawer, useTheme, useMediaQuery, IconButton, LinearProgress } from '@mui/material';
 import { Add as AddIcon, AssignmentTurnedIn as TaskIcon, Edit as EditIcon, Menu as MenuIcon } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -7,9 +7,7 @@ import { useUserContext } from '../UserContext';
 import { getProgressStatus, calculateAverageProgress, getProgressColor } from '../utils/projectUtils';
 
 const Layout = ({ children, onAddTask }) => {
-
-
-    const { user, setUser, setProjects, projects, userProjects, selectedCategory, setSelectedCategory, filteredProjects, getPriorityColor } = useUserContext();
+    const { user, setUser, setProjects, projects, userProjects, selectedCategory, setSelectedCategory, filteredProjects, getPriorityColor, allTasks } = useUserContext();
     const currentUser = user || "Alice";
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -17,23 +15,89 @@ const Layout = ({ children, onAddTask }) => {
     const navigate = useNavigate();
     const location = useLocation();
 
+    // Memoize the average progress calculation to prevent recalculation on every render
+    const averageProgress = useMemo(() => {
+        return calculateAverageProgress(filteredProjects);
+    }, [filteredProjects]);
+
+    
+    const handleNavigation = useCallback((path) => {
+        navigate(path);
+        if (!isMdUp) {
+            setMobileOpen(false);
+        }
+    }, [navigate, isMdUp]);
+
+    // Memoize the recent tasks to prevent unnecessary re-renders
+    const recentTasks = useMemo(() => {
+        console.log('🔄 Memoizing recent tasks', allTasks);
+        // Sort by task ID (higher ID = more recent) and get the 2 most recent
+        return allTasks
+            .sort((a, b) => b.id - a.id) // Sort by ID descending (newest first)
+            .slice(0, 2);
+    }, [allTasks]);
+
+    const recentTaskDisplay = useMemo(() => (
+        <Box role="list">
+
+            {recentTasks.map((task) => (
+                <Box
+                    key={task.id}
+                    sx={{
+                        p: 1.5,
+                        mb: 1,
+                        bgcolor: 'rgba(255,255,255,0.05)',
+                        borderRadius: 1,
+                        cursor: 'pointer',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        '&:hover': {
+                            bgcolor: 'rgba(255,255,255,0.15)',
+                            border: '1px solid rgba(255,255,255,0.3)'
+                        }
+                    }}
+                    role="listitem button"
+                    tabIndex={0}
+                    aria-label={`Click to view task: ${task.title}`}
+                    onClick={() => handleNavigation(`/task/${task.id}`)}
+                >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                        <Typography variant="caption" fontWeight="bold" sx={{ color: 'white' }}>
+                            {task.title}
+                        </Typography>
+                        <Chip
+                            label={task.priority}
+                            size="small"
+                            sx={{
+                                bgcolor: getPriorityColor(task.priority),
+                                color: 'white',
+                                fontSize: '0.6rem',
+                                height: '16px'
+                            }}
+                        />
+                    </Box>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                        {task.status}
+                    </Typography>
+                </Box>
+            ))}
+        </Box>
+    ), [recentTasks, handleNavigation, getPriorityColor]);
+
+    // Remove the old useState for recentTaskDisplay
+    // const [recentTaskDisplay, setRecentTaskDisplay] = useState(false);
+
     const drawerWidth = 300;
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
     };
 
-    const handleNavigation = (path) => {
-        navigate(path);
-        if (!isMdUp) {
-            setMobileOpen(false); // Close mobile drawer after navigation
-        }
-    };
 
     // Use the memoized filtered projects directly
-    const allTasks = filteredProjects.flatMap(project => project.tasks);
-    const totalTasks = allTasks.length;
-    const activeProjects = filteredProjects.length;
+    const { totalTasks, activeProjects } = useMemo(() => ({
+        totalTasks: allTasks.length,
+        activeProjects: filteredProjects.length
+    }), [allTasks.length, filteredProjects.length]);
 
     const handleCategoryChange = (category) => {
         setSelectedCategory(category);
@@ -43,19 +107,20 @@ const Layout = ({ children, onAddTask }) => {
         }
     };
 
-
     const drawerContent = (
-        <Box sx={{ height: '100%', bgcolor: '#37474f', color: 'white', overflow: 'visible', minHeight: '100vh' }}>
-            <Box sx={{ p: 2 }}>
-                {/* <Typography
-                    variant="h6"
-                    gutterBottom
-                    component="h2"
-                    id="navigation-title"
-                >
-                    TaskTracker
-                </Typography> */}
-
+        <Box sx={{
+            height: '100vh', // Use full viewport height
+            bgcolor: '#37474f',
+            color: 'white',
+            display: 'flex',
+            flexDirection: 'column'
+        }}>
+            {/* Fixed header section */}
+            <Box sx={{ 
+                p: 2, 
+                flexShrink: 0, // Prevent header from shrinking
+                borderBottom: '1px solid rgba(255,255,255,0.1)'
+            }}>
                 {/* Category Filter Section */}
                 <Box sx={{ mb: 2 }}>
                     <Typography
@@ -118,8 +183,6 @@ const Layout = ({ children, onAddTask }) => {
                     </List>
                 </Box>
 
-                <Divider sx={{ my: 1, bgcolor: 'rgba(255,255,255,0.2)' }} />
-
                 {/* Create New Project Button */}
                 <Button
                     variant="contained"
@@ -131,9 +194,17 @@ const Layout = ({ children, onAddTask }) => {
                 >
                     Create New Project
                 </Button>
+            </Box>
 
-                <Divider sx={{ my: 2, bgcolor: 'rgba(255,255,255,0.2)' }} aria-hidden="true" />
-
+            {/* Scrollable content section */}
+            <Box sx={{ 
+                flexGrow: 1, 
+                overflowY: 'auto', // Enable vertical scrolling
+                p: 2,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2
+            }}>
                 {/* Quick Navigation Links */}
                 <Box component="nav" aria-label="Quick navigation links">
                     <Typography
@@ -210,12 +281,12 @@ const Layout = ({ children, onAddTask }) => {
 
                 {/** Statistics Section */}
                 <Box
-                    sx={{ mt: 4, p: 2, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}
+                    sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}
                     component="section"
                     aria-label="Task statistics"
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-                        <TaskIcon sx={{ mr: 1 }} aria-hidden="true" />
+                        <TaskIcon sx={{ mr: 1 }} />
                         <Typography variant="subtitle2" fontWeight="bold">
                             Task Overview
                         </Typography>
@@ -239,97 +310,55 @@ const Layout = ({ children, onAddTask }) => {
                                     Overall Progress
                                 </Typography>
                                 <Typography variant="body2" fontWeight="bold">
-                                    {calculateAverageProgress(userProjects)}%
+                                    {averageProgress}%
                                 </Typography>
                             </Box>
 
                             <LinearProgress
                                 variant="determinate"
-                                value={calculateAverageProgress(userProjects)}
+                                value={averageProgress}
                                 sx={{
                                     height: 6,
                                     borderRadius: 3,
                                     bgcolor: '#e0e0e0',
                                     '& .MuiLinearProgress-bar': {
-                                        bgcolor: getProgressColor(calculateAverageProgress(userProjects)),
+                                        bgcolor: getProgressColor(averageProgress),
                                         borderRadius: 3
                                     }
                                 }}
                             />
 
                             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                                {getProgressStatus(calculateAverageProgress(userProjects))} • {userProjects.length} projects
+                                {getProgressStatus(averageProgress)} • {userProjects.length} projects
                             </Typography>
                         </Box>
 
-                        {/* <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary">
                             Average completion across all your projects
-                        </Typography> */}
+                        </Typography>
                     </Box>
-
                 </Box>
 
                 {/* Recent Tasks Section */}
                 <Box
-                    sx={{ mt: 3, p: 2, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}
+                    sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}
                     component="section"
                     aria-label="Recent tasks"
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                        <EditIcon sx={{ mr: 1 }} aria-hidden="true" />
+                        <EditIcon sx={{ mr: 1 }} />
                         <Typography variant="subtitle2" fontWeight="bold">
                             Recent Tasks
                         </Typography>
                     </Box>
-                    <Box role="list" aria-label="Recent tasks">
-                        {allTasks.slice(0, 3).map((task) => (
-                            <Box
-                                key={task.id}
-                                sx={{
-                                    p: 1.5,
-                                    mb: 1,
-                                    bgcolor: 'rgba(255,255,255,0.05)',
-                                    borderRadius: 1,
-                                    cursor: 'pointer',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    '&:hover': {
-                                        bgcolor: 'rgba(255,255,255,0.15)',
-                                        border: '1px solid rgba(255,255,255,0.3)'
-                                    }
-                                }}
-                                role="listitem button"
-                                tabIndex={0}
-                                aria-label={`Click to view task: ${task.title}`}
-                                onClick={() => handleNavigation(`/task/${task.id}`)}
-                            >
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                                    <Typography variant="caption" fontWeight="bold" sx={{ color: 'white' }}>
-                                        {task.title}
-                                    </Typography>
-                                    <Chip
-                                        label={task.priority}
-                                        size="small"
-                                        sx={{
-                                            bgcolor: getPriorityColor(task.priority),
-                                            color: 'white',
-                                            fontSize: '0.6rem',
-                                            height: '16px'
-                                        }}
-                                    />
-                                </Box>
-                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                                    {task.status}
-                                </Typography>
-                            </Box>
-                        ))}
-                    </Box>
+                    {recentTaskDisplay}
                 </Box>
             </Box>
         </Box>
     );
 
     return (
-        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+        <Box sx={{ display: 'flex' }}>
             {/* Navigation Drawer */}
             <Box
                 component="nav"
@@ -342,9 +371,16 @@ const Layout = ({ children, onAddTask }) => {
                     open={mobileOpen}
                     onClose={handleDrawerToggle}
                     ModalProps={{
-                        keepMounted: true, // Better open performance on mobile.
+                        keepMounted: true, // Better open performance on mobile
+                        BackdropProps: {
+                            'aria-hidden': false
+                        },
+                        'aria-hidden': false
                     }}
                     sx={styles.mobileDrawer}
+                    PaperProps={{
+                        'aria-hidden': false
+                    }}
                 >
                     {drawerContent}
                 </Drawer>
@@ -363,6 +399,7 @@ const Layout = ({ children, onAddTask }) => {
             <Box
                 component="main"
                 sx={styles.mainBox}
+                aria-hidden={false}
             >
                 {/* App Bar for mobile menu button */}
                 <Box
@@ -389,7 +426,7 @@ const Layout = ({ children, onAddTask }) => {
                 </Box>
 
                 {/* Page Content */}
-                <Box sx={{ flexGrow: 1 }}>
+                <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
                     {children}
                 </Box>
             </Box>
@@ -399,14 +436,15 @@ const Layout = ({ children, onAddTask }) => {
 
 export default Layout;
 
+// ...existing code...
 const styles = {
     mobileDrawer: {
         display: { xs: 'block', md: 'none' },
         '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
             width: 300,
-            position: 'relative',
-            height: '100%'
+            height: '100vh', // Full viewport height
+            overflow: 'hidden' // Let content handle its own scrolling
         },
     },
     desktopDrawer: {
@@ -414,14 +452,17 @@ const styles = {
         '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
             width: 300,
-            position: 'relative',
-            height: '100%',
-            border: 'none'
+            position: 'fixed', // Fixed position to stay in place
+            top: 0,
+            left: 0,
+            height: '100vh', // Full viewport height
+            border: 'none',
+            bgcolor: '#37474f',
+            overflow: 'hidden' // Let content handle its own scrolling
         },
     },
     mainBox: {
         flexGrow: 1,
-        width: { md: `calc(100% - 300px)` },
         bgcolor: '#f5f5f5',
         minHeight: '100vh',
         display: 'flex',

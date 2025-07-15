@@ -10,6 +10,7 @@ import TaskDetails from './Screens/TaskDetails';
 import AddTask from './Screens/AddTask';
 import Layout from './Components/Layout';
 import AllTasks from './Screens/allTasks';
+import ProjectOverview from './Screens/ProjectOverview';
 import { UserProvider } from './UserContext';
 import { useUserContext } from './UserContext';
 
@@ -168,6 +169,10 @@ function AppContent() {
           <Route 
             path="/task/:id" 
             element={<TaskDetailsWrapper />} 
+          />
+          <Route 
+            path="/project/:id" 
+            element={<ProjectOverview />} 
           />
           <Route 
             path="/add-task" 

@@ -1,27 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Avatar,
-  Chip,
-  Grid,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  TextField,
-  Paper,
-  Divider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton
-} from '@mui/material';
+import { Box, Container, Typography, Card, CardContent, Button, Avatar, Chip, Grid, List, ListItem, ListItemAvatar, ListItemText, TextField, Paper, Divider, FormControl, InputLabel, Select, MenuItem, IconButton} from '@mui/material';
 import {
   Person as PersonIcon,
   AssignmentTurnedIn as TaskIcon,
@@ -40,7 +18,7 @@ const TaskDetails = ({ task, onBack }) => {
   const [taskColor, setTaskColor] = useState('#1976d2');
   const [editableTask, setEditableTask] = useState(null);
     const navigate = useNavigate();
-    const { user, setProjects } = useUserContext();
+    const { user, setProjects, updateTask } = useUserContext();
   const [comments, setComments] = useState(task?.comments || [
     {
       id: 1,
@@ -59,36 +37,19 @@ const TaskDetails = ({ task, onBack }) => {
   ]);
 
     const handleSaveTask = () => {
-    if (editableTask) {
-        // Update the task in the user context
-        setProjects(prevProjects => {
-            return prevProjects.map(project => {
-                // Find the project that contains this task
-                const taskExists = project.tasks.some(t => t.id === editableTask.id);
-                if (taskExists) {
-                    return {
-                        ...project,
-                        tasks: project.tasks.map(t => {
-                            if (t.id === editableTask.id) {
-                                return {
-                                    ...t,
-                                    ...editableTask,
-                                    color: taskColor // Update color as well
-                                };
-                            }
-                            return t;
-                        })
-                    };
-                }
-                // If task not found in this project, return the project unchanged
-                return project;
-            });
+    if (editableTask && updateTask) {
+        // Use the new updateTask function which handles selectedProject updates
+        updateTask({
+            ...editableTask,
+            color: taskColor
         });
+        
         // Reset editing state
         setIsEditing(false);
         setEditableTask(null);
-        // Optionally navigate back or show a success message
-        navigate('/'); // Navigate to the dashboard or task list
+        
+        console.log('Task updated:', editableTask);
+        window.history.back(); // Navigate back to the previous screen, e.g., dashboard
     }
     };
     
@@ -136,28 +97,14 @@ const currentTask = task;
             // For now, add to local state (will be replaced by API response)
             setComments(prevComments => [...prevComments, comment]);
             
-            // Update the user context - find the correct project and task
-            setProjects(prevProjects => {
-              return prevProjects.map(project => {
-                // Find the project that contains this task
-                const taskExists = project.tasks.some(t => t.id === currentTask.id);
-                if (taskExists) {
-                  return {
-                    ...project,
-                    tasks: project.tasks.map(t => {
-                      if (t.id === currentTask.id) {
-                        return {
-                          ...t,
-                          comments: [...(t.comments || []), comment]
-                        };
-                      }
-                      return t;
-                    })
-                  };
-                }
-                return project;
-              });
-            });
+            // Update the task with the new comment using updateTask
+            if (updateTask) {
+                updateTask({
+                    ...currentTask,
+                    comments: [...(currentTask.comments || []), comment]
+                });
+            }
+            
             // Clear the input field
             setNewComment('');
             
