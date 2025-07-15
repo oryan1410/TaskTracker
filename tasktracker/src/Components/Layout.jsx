@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, Typography, List, ListItem, ListItemText, Button, Chip, Divider, Drawer, useTheme, useMediaQuery, IconButton, LinearProgress } from '@mui/material';
-import { Add as AddIcon, AssignmentTurnedIn as TaskIcon, Edit as EditIcon, Menu as MenuIcon } from '@mui/icons-material';
+import { Add as AddIcon, AssignmentTurnedIn as TaskIcon, Edit as EditIcon, Menu as MenuIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { useUserContext } from '../UserContext';
 import { getProgressStatus, calculateAverageProgress, getProgressColor } from '../utils/projectUtils';
 
-const Layout = ({ children, onAddTask }) => {
+const Layout = ({ children, onAddTask, onLogout }) => {
     const { user, setUser, setProjects, projects, userProjects, selectedCategory, setSelectedCategory, filteredProjects, getPriorityColor, allTasks } = useUserContext();
     const currentUser = user || "Alice";
     const theme = useTheme();
@@ -101,7 +101,7 @@ const Layout = ({ children, onAddTask }) => {
 
     const handleCategoryChange = (category) => {
         setSelectedCategory(category);
-        navigate('/'); // Navigate to dashboard on category change
+        navigate('/dashboard'); // Navigate to dashboard on category change
         if (!isMdUp) {
             setMobileOpen(false); // Close mobile drawer on category change
         }
@@ -194,6 +194,29 @@ const Layout = ({ children, onAddTask }) => {
                 >
                     Create New Project
                 </Button>
+
+                {/* Logout Button */}
+                {onLogout && (
+                    <Button
+                        variant="outlined"
+                        startIcon={<LogoutIcon />}
+                        fullWidth
+                        sx={{ 
+                            mt: 1, 
+                            borderColor: 'rgba(255,255,255,0.3)', 
+                            color: 'white',
+                            borderRadius: 2,
+                            '&:hover': {
+                                borderColor: 'rgba(255,255,255,0.5)',
+                                bgcolor: 'rgba(255,255,255,0.1)'
+                            }
+                        }}
+                        onClick={onLogout}
+                        aria-label="Sign out"
+                    >
+                        Sign Out
+                    </Button>
+                )}
             </Box>
 
             {/* Scrollable content section */}
@@ -242,7 +265,7 @@ const Layout = ({ children, onAddTask }) => {
                             role="listitem"
                             tabIndex={0}
                             aria-label="Navigate to projects"
-                            onClick={() => handleNavigation('/')}
+                            onClick={() => handleNavigation('/dashboard')}
                         >
                             Projects ({activeProjects})
                         </Typography>

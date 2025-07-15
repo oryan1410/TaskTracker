@@ -7,6 +7,7 @@ TaskTracker is a simple and efficient application designed to help users manage 
 ## Features
 
 - Add, edit, and delete tasks
+- Add, edit and monitor Project progression
 - Mark tasks as complete
 - Organize tasks by categories or priorities
 - User-friendly interface

@@ -11,6 +11,7 @@ import AddTask from './Screens/AddTask';
 import Layout from './Components/Layout';
 import AllTasks from './Screens/allTasks';
 import ProjectOverview from './Screens/ProjectOverview';
+import Login from './Screens/Login';
 import { UserProvider } from './UserContext';
 import { useUserContext } from './UserContext';
 
@@ -51,7 +52,10 @@ function App() {
 
 function AppContent() {
   const navigate = useNavigate();
-  const { projects, user, filteredProjects } = useUserContext();
+  const { projects, user, filteredProjects,handleUserLogin } = useUserContext();
+
+  // Authentication state - for now, check if user exists
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Current user - in a real app this would come from authentication
   const currentUser = user || "Alice";
@@ -123,6 +127,26 @@ function AppContent() {
 
   };
 
+  // Handle login success
+  const handleLogin = async (loginData) => {
+    console.log('Login successful:', loginData);
+    let auth = await handleUserLogin(loginData);
+    if (!auth) {
+      alert('Login failed');
+      return;
+    }
+    // Set authenticated state
+    alert('Setting authenticated state');
+    setIsAuthenticated(true);
+    navigate('/dashboard');
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    navigate('/');
+  };
+
   // TaskDetails wrapper to handle route parameters
   const TaskDetailsWrapper = () => {
     const { id } = useParams();
@@ -150,56 +174,89 @@ function AppContent() {
     );
   };
 
-  return (
-    <div className="App">
+  // Protected Layout Wrapper
+  const ProtectedLayoutWrapper = ({ children }) => {
+    if (!isAuthenticated) {
+      return <Navigate to="/" replace />;
+    }
+    
+    return (
       <Layout 
         onAddTask={() => setShowAddTask(true)}
+        onLogout={handleLogout}
       >
-        <Routes>            <Route 
-              path="/" 
-              element={
-                <Dashboard 
-                  key="dashboard"
-                  tasks={getFilteredTasks()}
-                  onTaskClick={handleTaskClick}
-                  onAddTask={() => setShowAddTask(true)}
-                />
-              } 
-            />
-          <Route 
-            path="/task/:id" 
-            element={<TaskDetailsWrapper />} 
-          />
-          <Route 
-            path="/project/:id" 
-            element={<ProjectOverview />} 
-          />
-          <Route 
-            path="/add-task" 
-            element={
-              <AddTask 
-                open={false}
-                onSave={handleAddProject}
-                onClose={goBackToDashboard}
-              />
-            } 
-          />
-          <Route 
-            path="/all-tasks" 
-            element={
-              <AllTasks 
-                tasks={getFilteredTasks()} 
-                onTaskClick={handleTaskClick}
-                onAddTask={() => setShowAddTask(true)}
-              />
-            }
-          />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+        {children}
       </Layout>
+    );
+  };
 
-      {/* Add Task Modal - Only show when showAddTask is true */}
-      {showAddTask && (
+  return (
+    <div className="App">
+      <Routes> 
+        {/* Public Routes - No Layout */}
+        <Route 
+          path="/"
+          element={
+            isAuthenticated ? 
+              <Navigate to="/dashboard" replace /> : 
+              <Login onLogin={handleLogin} />
+          }
+        />
+
+        {/* Protected Routes - All wrapped with Layout */}
+        <Route path="/*" element={
+          <ProtectedLayoutWrapper>
+            <Routes>
+              <Route 
+                path="/dashboard" 
+                element={
+                  <Dashboard 
+                    key="dashboard"
+                    tasks={getFilteredTasks()}
+                    onTaskClick={handleTaskClick}
+                    onAddTask={() => setShowAddTask(true)}
+                  />
+                } 
+              />
+              
+              <Route 
+                path="/task/:id" 
+                element={<TaskDetailsWrapper />} 
+              />
+              
+              <Route 
+                path="/project/:id" 
+                element={<ProjectOverview />} 
+              />
+              
+              <Route 
+                path="/add-task" 
+                element={
+                  <AddTask 
+                    open={false}
+                    onSave={handleAddProject}
+                    onClose={goBackToDashboard}
+                  />
+                } 
+              />
+              
+              <Route 
+                path="/all-tasks" 
+                element={
+                  <AllTasks 
+                    tasks={getFilteredTasks()} 
+                    onTaskClick={handleTaskClick}
+                    onAddTask={() => setShowAddTask(true)}
+                  />
+                }
+              />
+            </Routes>
+          </ProtectedLayoutWrapper>
+        } />
+      </Routes>
+
+      {/* Add Task Modal - Only show when showAddTask is true and authenticated */}
+      {showAddTask && isAuthenticated && (
         <AddTask 
           open={showAddTask}
           onSave={handleAddProject}
