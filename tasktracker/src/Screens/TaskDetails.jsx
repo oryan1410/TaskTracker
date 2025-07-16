@@ -37,6 +37,7 @@ const TaskDetails = ({ task, onBack }) => {
   ]);
 
     const handleSaveTask = () => {
+        console.log('Saving task:', editableTask);
     if (editableTask && updateTask) {
         // Use the new updateTask function which handles selectedProject updates
         updateTask({
@@ -277,13 +278,13 @@ const currentTask = task;
                       <TextField
                         type="date"
                         size="small"
-                        value={editableTask?.dueDate || ''}
-                        onChange={(e) => handleTaskChange('dueDate', e.target.value)}
+                        value={editableTask?.due_date || ''}
+                        onChange={(e) => handleTaskChange('due_date', e.target.value)}
                         sx={{ mt: 0.5 }}
                       />
                     ) : (
                       <Typography variant="body2" fontWeight="medium">
-                        {editableTask?.dueDate || currentTask.dueDate}
+                        {editableTask?.due_date || currentTask.due_date}
                       </Typography>
                     )}
                   </Box>

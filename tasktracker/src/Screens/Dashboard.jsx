@@ -118,7 +118,6 @@ const Dashboard = ({ onAddTask, onTaskClick, tasks: propTasks, currentUser }) =>
     };
 
     useEffect(() => {
-        console.log("Rendering project details for:", selectedProject);
         renderProjectDetails();
     }, [selectedProject, projects]);
 

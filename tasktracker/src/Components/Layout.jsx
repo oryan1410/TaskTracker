@@ -30,7 +30,7 @@ const Layout = ({ children, onAddTask, onLogout }) => {
 
     // Memoize the recent tasks to prevent unnecessary re-renders
     const recentTasks = useMemo(() => {
-        console.log('🔄 Memoizing recent tasks', allTasks);
+        // console.log('🔄 Memoizing recent tasks', allTasks);
         // Sort by task ID (higher ID = more recent) and get the 2 most recent
         return allTasks
             .sort((a, b) => b.id - a.id) // Sort by ID descending (newest first)
